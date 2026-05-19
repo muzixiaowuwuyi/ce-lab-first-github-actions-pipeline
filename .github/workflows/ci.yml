@@ -1,43 +1,54 @@
 name: Terraform CI Pipeline
 
 on:
-    push:
-        branches:
-            - main
-    pull_request:
-        branches:
-            - main
+  push:
+    branches:
+      - main
+      - "feature/**"
+  pull_request:
+    branches:
+      - main
 
 permissions:
-    contents: read
+  contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-    terraform-ci:
-        name: Terraform Checks
-        runs-on: ubuntu-latest
+  terraform-ci:
+    name: Terraform Checks
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref }}
 
-            - name: Set up Terraform
-              uses: hashicorp/setup-terraform@v3
-              with:
-                  terraform_version: 1.6.0
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
 
-            - name: Terraform Format Check
-              run: terraform fmt -check
-              continue-on-error: false
+      - name: Terraform Format
+        run: terraform fmt -recursive
+        continue-on-error: false
 
-            - name: Terraform Init
-              run: terraform init -backend=false
+      - name: Auto-commit formatted code
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "style: auto-formatted terraform code by GitHub Actions"
 
-            - name: Terraform Validate
-              run: terraform validate
+      - name: Terraform Init
+        run: terraform init -backend=false
 
-            - name: Terraform Plan
-              run: terraform plan input=false -no-color
-              env:
-                  ARM_ACCESS_KEY_ID: ${{ secrets.ARM_ACCESS_KEY_ID }}
-                  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-                  AWS_DEFAULT_REGION: us-east-1
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: terraform plan input=false -no-color
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-1

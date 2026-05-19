@@ -3,13 +3,13 @@ variable "project_name" {
   type        = string
   default     = "ci-lab-gl-li"
 }
- 
+
 variable "environment" {
   description = "Deployment environment"
   type        = string
   default     = "dev"
 }
- 
+
 variable "aws_region" {
   description = "AWS region"
   type        = string
